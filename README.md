@@ -4,14 +4,17 @@ Project submission for Udacity Data Engineering Nanodegree - Data Pipelines
 
 ## Summary
 
-# Install
+## Install
+
+In `airflow.cfg` update `dags_folder` and `plugins_folder` to the project subdirectories. Set `load_examples = False`.
 
 ```bash
-airflow initdb
+$ pip install -r requirements.txt
+$ airflow initdb
+$ airflow scheduler
+$ airflow webserver
 ```
 
-airflow.cfg, unittests.cfg
+## Pipeline
 
-dags_folder
-plugins_folder
-load_examples False
+![DAG graph](img/dag-graph.png)
