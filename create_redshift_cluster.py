@@ -9,6 +9,7 @@ import time
 
 import boto3
 from botocore.exceptions import ClientError
+import psycopg2
 
 
 # CONFIG
@@ -128,28 +129,49 @@ def open_tcp(ec2, vpc_id):
 def main(args):
     """ Main function """
     ec2, s3, iam, redshift = create_resources()
+
     if args.delete:
         delete_redshift_cluster(redshift)
         delete_iam_role(iam)
+        return
+
+    role_arn = create_iam_role(iam)
+    create_redshift_cluster(redshift, role_arn)
+
+    # Poll the Redshift cluster after creation until available
+    timestep = 15
+    for _ in range(int(600/timestep)):
+        cluster = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_ID)['Clusters'][0]
+        if cluster['ClusterStatus'] == 'available':
+            break
+        logging.info('Cluster status is "{}". Retrying in {} seconds.'.format(cluster['ClusterStatus'], timestep))
+        time.sleep(timestep)
+
+    # Open TCP connection upon successful cluster creation
+    if cluster:
+        logging.info('Cluster created at {}'.format(cluster['Endpoint']))
+        open_tcp(ec2, cluster['VpcId'])
     else:
-        role_arn = create_iam_role(iam)
-        create_redshift_cluster(redshift, role_arn)
+        logging.error('Could not connect to cluster')
 
-        # Poll the Redshift cluster after creation until available
-        timestep = 15
-        for _ in range(int(600/timestep)):
-            cluster = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_ID)['Clusters'][0]
-            if cluster['ClusterStatus'] == 'available':
-                break
-            logging.info('Cluster status is "{}". Retrying in {} seconds.'.format(cluster['ClusterStatus'], timestep))
-            time.sleep(timestep)
-
-        # Open TCP connection upon successful cluster creation
-        if cluster:
-            logging.info('Cluster created at {}'.format(cluster['Endpoint']))
-            open_tcp(ec2, cluster['VpcId'])
-        else:
-            logging.error('Could not connect to cluster')
+    # Execute SQL command upon cluster creation
+    if args.query_file:
+        conn = psycopg2.connect(
+            "host={} dbname={} user={} password={} port={}".format(
+                cluster['Endpoint']['Address'],
+                config['DB']['NAME'],
+                config['DB']['USER'],
+                config['DB']['PASSWORD'],
+                config['DB']['PORT']
+            )
+        )
+        with open(args.query_file, 'r') as file:
+            query = file.read()
+        cur = conn.cursor()
+        cur.execute(query)
+        conn.commit()
+        conn.close()
+        logging.info(f'Executed query {query}')
 
 
 if __name__ == '__main__':
@@ -157,5 +179,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser()
     parser.add_argument('--delete', dest='delete', default=False, action='store_true')
+    parser.add_argument('--query_file', dest='query_file', default=None)
     args = parser.parse_args()
     main(args)

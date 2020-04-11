@@ -17,9 +17,9 @@ Set environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
 
 Choose DB/PASSWORD in `redshift.cfg`.
 
-Create IAM role, Redshift cluster, and configure TCP connectivity
+Create IAM role, Redshift cluster, configure TCP connectivity, and create tables
 ```bash
-$ python create_redshift_cluster.py
+$ python create_redshift_cluster.py --query_file create_tables.sql
 ```
 
 Take note of Redshift cluster endpoint.
@@ -50,6 +50,14 @@ Click `Save and Add Another`
 * Login: `awsuser`
 * Password: `<Redshift password>`
 * Port: `5439`
+
+### Tear down
+
+Delete IAM role and Redshift cluster
+
+```
+$ python create_cluster.py --delete
+```
 
 ## Pipeline
 
