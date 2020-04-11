@@ -100,6 +100,34 @@ def delete_redshift_cluster(redshift):
         logging.error(e)
 
 
+def execute_query_from_file(host, query_file):
+    """ Execute query defined in sql file
+
+    Arguments:
+        host: Database host address
+        query_file: Path to file with sql queries
+
+    Returns:
+        None
+    """
+    conn = psycopg2.connect(
+        "host={} dbname={} user={} password={} port={}".format(
+            host,
+            config['DB']['NAME'],
+            config['DB']['USER'],
+            config['DB']['PASSWORD'],
+            config['DB']['PORT']
+        )
+    )
+    with open(args.query_file, 'r') as file:
+        query = file.read()
+    cur = conn.cursor()
+    cur.execute(query)
+    conn.commit()
+    conn.close()
+    logging.info(f'Executed query {query}')
+
+
 def get_public_ip():
     """ Get public IP of this machine to enable increased security """
     command = 'dig +short myip.opendns.com @resolver1.opendns.com'
@@ -156,22 +184,7 @@ def main(args):
 
     # Execute SQL command upon cluster creation
     if args.query_file:
-        conn = psycopg2.connect(
-            "host={} dbname={} user={} password={} port={}".format(
-                cluster['Endpoint']['Address'],
-                config['DB']['NAME'],
-                config['DB']['USER'],
-                config['DB']['PASSWORD'],
-                config['DB']['PORT']
-            )
-        )
-        with open(args.query_file, 'r') as file:
-            query = file.read()
-        cur = conn.cursor()
-        cur.execute(query)
-        conn.commit()
-        conn.close()
-        logging.info(f'Executed query {query}')
+        execute_query_from_file(host=cluster['Endpoint']['Address'], query_file=args.query_file)
 
 
 if __name__ == '__main__':
