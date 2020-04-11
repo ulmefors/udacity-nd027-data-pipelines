@@ -25,15 +25,14 @@ default_args = {
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
     'email_on_retry': False,
-    'start_date': datetime(2018, 11, 1),
-    'schedule_interval': '@once',
 }
 
 dag = DAG(
-    'udac_example_dag',
+    dag_id='udac_example_dag',
     default_args=default_args,
     catchup=False,
     description='Load and transform data in Redshift with Airflow',
+    start_date=datetime(2018, 11, 1),
     schedule_interval='@once',
 )
 

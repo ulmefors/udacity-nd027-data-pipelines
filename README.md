@@ -13,16 +13,18 @@ Install python requirements
 $ pip install -r requirements.txt
 ```
 
-Set environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
+Set environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
-Choose DB/PASSWORD in `redshift.cfg`.
+Choose `DB/PASSWORD` in `redshift.cfg`.
 
-Create IAM role, Redshift cluster, configure TCP connectivity, and create tables
+Create IAM role, Redshift cluster, configure TCP connectivity, and create Redshift tables
 ```bash
 $ python create_redshift_cluster.py --query_file create_tables.sql
 ```
 
-Take note of Redshift cluster endpoint.
+Take note of Redshift cluster endpoint and update `DB/HOST` in `redshift.cfg`.
+
+### Start Airflow
 
 ```bash
 $ airflow initdb
