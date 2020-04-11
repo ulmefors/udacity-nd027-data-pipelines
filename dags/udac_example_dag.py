@@ -1,3 +1,4 @@
+import configparser
 from datetime import datetime, timedelta
 import os
 from airflow import DAG
@@ -9,13 +10,23 @@ from helpers import SqlQueries
 # AWS_KEY = os.environ.get('AWS_KEY')
 # AWS_SECRET = os.environ.get('AWS_SECRET')
 
+config = configparser.ConfigParser()
+config.read('redshift.cfg')
+
+S3_BUCKET = 'udacity-dend'
+S3_LOG_KEY = 'log_data/{execution_date.year}/{execution_date.month}'
+S3_SONG_KEY = 'song_data'
+IAM_ROLE_ARN = f'arn:aws:iam::{config["AWS"]["ACCOUNT"]}:role/{config["REDSHIFT"]["IAM_ROLE_NAME"]}'
+REGION = config['REDSHIFT']['REGION']
+
 default_args = {
     'owner': 'udacity',
     'depends_on_past': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
     'email_on_retry': False,
-    'start_date': datetime(2019, 1, 12),
+    'start_date': datetime(2018, 11, 1),
+    'schedule_interval': '@once',
 }
 
 dag = DAG(
@@ -23,19 +34,35 @@ dag = DAG(
     default_args=default_args,
     catchup=False,
     description='Load and transform data in Redshift with Airflow',
-    schedule_interval='0 * * * *'
+    schedule_interval='@once',
 )
 
-start_operator = DummyOperator(task_id='Begin_execution',  dag=dag)
+start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
 
 stage_events_to_redshift = StageToRedshiftOperator(
     task_id='Stage_events',
-    dag=dag
+    dag=dag,
+    redshift_conn_id='redshift',
+    aws_credentials_id='aws_credentials',
+    table='staging_events',
+    s3_bucket=S3_BUCKET,
+    s3_key=S3_LOG_KEY,
+    iam_role_arn=IAM_ROLE_ARN,
+    region=REGION,
+    delete=False,
 )
 
 stage_songs_to_redshift = StageToRedshiftOperator(
     task_id='Stage_songs',
-    dag=dag
+    dag=dag,
+    redshift_conn_id='redshift',
+    aws_credentials_id='aws_credentials',
+    table='staging_songs',
+    s3_bucket=S3_BUCKET,
+    s3_key=S3_SONG_KEY,
+    iam_role_arn=IAM_ROLE_ARN,
+    region=REGION,
+    delete=True,
 )
 
 load_songplays_table = LoadFactOperator(
@@ -68,7 +95,7 @@ run_quality_checks = DataQualityOperator(
     dag=dag
 )
 
-end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
+end_operator = DummyOperator(task_id='Stop_execution', dag=dag)
 
 start_operator >> stage_events_to_redshift
 start_operator >> stage_songs_to_redshift
