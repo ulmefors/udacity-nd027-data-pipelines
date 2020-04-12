@@ -10,7 +10,7 @@ class StageToRedshiftOperator(BaseOperator):
         COPY {}
         FROM '{}'
         IAM_ROLE '{}'
-        JSON 'auto' REGION '{}'
+        JSON '{}' REGION '{}'
     """
 
     @apply_defaults
@@ -23,32 +23,35 @@ class StageToRedshiftOperator(BaseOperator):
                  iam_role_arn='',
                  region='',
                  delete=False,
+                 json_path=None,
                  *args, **kwargs):
 
         super(StageToRedshiftOperator, self).__init__(*args, **kwargs)
         self.redshift_conn_id = redshift_conn_id
-        self.aws_credentials_id = aws_credentials_id
         self.table = table
         self.s3_bucket = s3_bucket
         self.s3_key = s3_key
         self.iam_role_arn = iam_role_arn
         self.region = region
         self.delete = delete
+        self.json_path = json_path
 
     def execute(self, context):
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
 
         if self.delete:
-            self.log.info(f'Delete data from Redshift table {self.table}')
-            redshift.run(f'DELETE FROM {self.table}')
+            self.log.info(f'Truncate Redshift table {self.table}')
+            redshift.run(f'TRUNCATE {self.table}')
 
         self.log.info('Copy data from S3 to Redshift')
         rendered_s3_key = self.s3_key.format(**context)
         s3_path = f's3://{self.s3_bucket}/{rendered_s3_key}'
+        json = self.json_path if self.json_path else 'auto'
         formatted_sql = StageToRedshiftOperator.copy_sql.format(
             self.table,
             s3_path,
             self.iam_role_arn,
+            json,
             self.region,
         )
         redshift.run(formatted_sql)
