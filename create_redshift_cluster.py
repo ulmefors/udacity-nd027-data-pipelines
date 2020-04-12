@@ -13,8 +13,9 @@ import psycopg2
 
 
 # CONFIG
+CONFIG_FILE = 'redshift.cfg'
 config = configparser.ConfigParser()
-config.read('redshift.cfg')
+config.read(CONFIG_FILE)
 
 KEY = os.environ['AWS_ACCESS_KEY_ID']
 SECRET = os.environ['AWS_SECRET_ACCESS_KEY']
@@ -122,10 +123,13 @@ def execute_query_from_file(host, query_file):
     with open(args.query_file, 'r') as file:
         query = file.read()
     cur = conn.cursor()
-    cur.execute(query)
-    conn.commit()
-    conn.close()
-    logging.info(f'Executed query {query}')
+    try:
+        cur.execute(query)
+        conn.commit()
+        conn.close()
+        logging.info(f'Executed query {query}')
+    except psycopg2.errors.DuplicateTable as e:
+        logging.error(e)
 
 
 def get_public_ip():
@@ -165,6 +169,7 @@ def main(args):
 
     role_arn = create_iam_role(iam)
     create_redshift_cluster(redshift, role_arn)
+    config['REDSHIFT']['IAM_ROLE_ARN'] = role_arn
 
     # Poll the Redshift cluster after creation until available
     timestep = 15
@@ -182,9 +187,15 @@ def main(args):
     else:
         logging.error('Could not connect to cluster')
 
+    host = cluster['Endpoint']['Address']
+    config['DB']['HOST'] = host
     # Execute SQL command upon cluster creation
     if args.query_file:
-        execute_query_from_file(host=cluster['Endpoint']['Address'], query_file=args.query_file)
+        execute_query_from_file(host=host, query_file=args.query_file)
+
+    # Update config file
+    with open(CONFIG_FILE, 'w') as cfg_file:
+        config.write(cfg_file)
 
 
 if __name__ == '__main__':

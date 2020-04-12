@@ -15,7 +15,7 @@ S3_BUCKET = 'udacity-dend'
 S3_LOG_KEY = 'log_data/{execution_date.year}/{execution_date.month}'
 S3_SONG_KEY = 'song_data'
 LOG_JSON_PATH = f's3://{S3_BUCKET}/log_json_path.json'
-IAM_ROLE_ARN = f'arn:aws:iam::{config["AWS"]["ACCOUNT"]}:role/{config["REDSHIFT"]["IAM_ROLE_NAME"]}'
+IAM_ROLE_ARN = config['REDSHIFT']['IAM_ROLE_ARN']
 REGION = config['REDSHIFT']['REGION']
 
 default_args = {

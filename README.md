@@ -6,7 +6,7 @@ Project submission for Udacity Data Engineering Nanodegree - Data Pipelines
 
 ## Install
 
-In `airflow.cfg` update `dags_folder` and `plugins_folder` to the project subdirectories. Set `load_examples = False`.
+In `airflow.cfg` (`~/airflow`) update `dags_folder` and `plugins_folder` to the project subdirectories. Set `load_examples = False`.
 
 Install python requirements
 ```bash
@@ -21,8 +21,6 @@ Create IAM role, Redshift cluster, configure TCP connectivity, and create Redshi
 ```bash
 $ python create_redshift_cluster.py --query_file create_tables.sql
 ```
-
-Take note of Redshift cluster endpoint and update `DB/HOST` in `redshift.cfg`.
 
 ### Start Airflow
 
