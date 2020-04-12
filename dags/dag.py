@@ -19,7 +19,7 @@ IAM_ROLE_ARN = config['REDSHIFT']['IAM_ROLE_ARN']
 REGION = config['REDSHIFT']['REGION']
 
 default_args = {
-    'owner': 'udacity',
+    'owner': 'airflow',
     'depends_on_past': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
@@ -110,6 +110,7 @@ run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
     postgres_conn_id='redshift',
+    tables=['staging_songs', 'staging_events', 'songplays', 'users', 'songs', 'artists', 'time']
 )
 
 end_operator = DummyOperator(task_id='Stop_execution', dag=dag)
