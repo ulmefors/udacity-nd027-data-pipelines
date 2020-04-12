@@ -6,12 +6,15 @@ Project submission for Udacity Data Engineering Nanodegree - Data Pipelines
 
 ## Install
 
-In `airflow.cfg` (`~/airflow`) update `dags_folder` and `plugins_folder` to the project subdirectories. Set `load_examples = False`.
-
 Install python requirements
+
 ```bash
 $ pip install -r requirements.txt
 ```
+
+Configure Airflow
+
+In `airflow.cfg` (`~/airflow`) update `dags_folder` and `plugins_folder` to the project subdirectories. Set `load_examples = False`.
 
 Set environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
@@ -45,10 +48,10 @@ Click `Save and Add Another`
 
 * Conn Id: `redshift`
 * Conn Type: `Postgres`
-* Host: `<Redshift cluster endpoint>`
+* Host: `<Redshift cluster endpoint from redshift.cfg>`
 * Schema: `dev`
 * Login: `awsuser`
-* Password: `<Redshift password>`
+* Password: `<Redshift db password from redshift.cfg>`
 * Port: `5439`
 
 ### Tear down
@@ -62,3 +65,7 @@ $ python create_cluster.py --delete
 ## Pipeline
 
 ![DAG graph](img/dag-graph.png)
+
+## Further work
+
+* Load dimensions with a subdag

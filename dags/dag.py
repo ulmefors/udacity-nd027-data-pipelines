@@ -23,16 +23,16 @@ default_args = {
     'depends_on_past': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
+    'start_date':datetime(2018, 11, 1),
     'email_on_retry': False,
+    'catchup': False,
 }
 
 dag = DAG(
     dag_id='dag',
     default_args=default_args,
-    catchup=False,
     description='Load and transform data in Redshift with Airflow',
-    start_date=datetime(2018, 11, 1),
-    schedule_interval='@once',
+    schedule_interval='@hourly',
 )
 
 start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
@@ -46,7 +46,7 @@ stage_events_to_redshift = StageToRedshiftOperator(
     s3_key=S3_LOG_KEY,
     iam_role_arn=IAM_ROLE_ARN,
     region=REGION,
-    delete=False,
+    truncate=False,
     json_path=LOG_JSON_PATH,
 )
 
@@ -59,7 +59,7 @@ stage_songs_to_redshift = StageToRedshiftOperator(
     s3_key=S3_SONG_KEY,
     iam_role_arn=IAM_ROLE_ARN,
     region=REGION,
-    delete=True,
+    truncate=True,
 )
 
 load_songplays_table = LoadFactOperator(
@@ -68,6 +68,7 @@ load_songplays_table = LoadFactOperator(
     postgres_conn_id='redshift',
     sql=SqlQueries.songplay_table_insert,
     table='songplays',
+    truncate=False,
 )
 
 load_user_dimension_table = LoadDimensionOperator(
