@@ -3,6 +3,7 @@
 Project submission for Udacity Data Engineering Nanodegree - Data Pipelines
 
 ## Summary
+This project combines song listen log files with song metadata to facilitate analytics. JSON data residing in S3 is fed trough a data pipeline defined in Apache Airflow. The pipeline stages data into Redshift before inserting data into suitable tables for analysis. Data quality checks are performed before concluding the pipeline. The end result is a Redshift cluster with data organized into a star schema with fact and dimension tables. Analytics queries on the songplays fact table are straightforward, and additional fields can be easily accessed in the four dimension tables users, songs, artists, and time. A star schema is suitable for this application since denormalization is easy, queries can be kept simple, and aggregations are fast.
 
 ## Install
 
@@ -43,8 +44,8 @@ On the create connection page, enter the following values:
 
 * Conn Id: `aws_credentials`
 * Conn Type: `Amazon Web Services`
-* Login: AWS Access Key ID
-* Password: AWS Secret Access Key
+* Login: `<AWS_ACCESS_KEY_ID>`
+* Password: `<AWS_SECRET_ACCESS_KEY>`
 
 Click `Save and Add Another`
 
