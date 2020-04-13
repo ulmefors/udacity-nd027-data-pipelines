@@ -6,21 +6,23 @@ Project submission for Udacity Data Engineering Nanodegree - Data Pipelines
 
 ## Install
 
-Install python requirements
+**Python requirements**
 
 ```bash
 $ pip install -r requirements.txt
 ```
 
-Configure Airflow
+**Configure Airflow**
 
 In `airflow.cfg` (`~/airflow`) update `dags_folder` and `plugins_folder` to the project subdirectories. Set `load_examples = False`.
+
+**Configure environment**
 
 Set environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
 Choose `DB/PASSWORD` in `redshift.cfg`.
 
-Create IAM role, Redshift cluster, configure TCP connectivity, and create Redshift tables
+**Create IAM role, Redshift cluster, configure TCP connectivity, and create Redshift tables**
 ```bash
 $ python create_redshift_cluster.py --query_file create_tables.sql
 ```
@@ -56,9 +58,9 @@ Click `Save and Add Another`
 
 ### Tear down
 
-Delete IAM role and Redshift cluster
+**Delete IAM role and Redshift cluster**
 
-```
+```bash
 $ python create_cluster.py --delete
 ```
 
