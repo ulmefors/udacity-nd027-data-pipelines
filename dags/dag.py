@@ -10,7 +10,7 @@ from helpers import DataQualityTest
 
 
 config = configparser.ConfigParser()
-config.read('redshift.cfg')
+config.read(os.path.join(os.path.dirname(__file__), '..', 'redshift.cfg'))
 
 S3_BUCKET = 'udacity-dend'
 S3_LOG_KEY = 'log_data/{execution_date.year}/{execution_date.month}'
