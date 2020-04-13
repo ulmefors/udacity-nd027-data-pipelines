@@ -1,33 +1,29 @@
 import logging
 
 
-def no_results_validation(records, table=None):
-    if len(records) < 1 or len(records[0]) < 1:
-        raise ValueError(f'Error: Table {table} returns no results')
-    num_records = records[0][0]
-    if num_records < 1:
-        raise ValueError(f'Error: Table {table} contains 0 records')
-    logging.info(f'Passed: Table {table} contains {num_records} records')
-    return True
+class DataQualityTest:
 
+    def __init__(self, sql, validation, table=None):
+        self.sql = sql
+        self.validation = validation
+        self.table = table
+        self.records = None
 
-class DataQualityTests:
+    def validate(self):
+        return self.validation(self.records, self.table)
 
-    class DataQualityTest:
+    @staticmethod
+    def no_results_validation(records, table=None):
+        n_records = len(records)
+        if n_records < 1 or len(records[0]) < 1:
+            raise ValueError(f'Error: Table {table} returns no results')
+        logging.info(f'Passed: Table {table} contains {n_records} records')
+        return True
 
-        def __init__(self, sql, validation, table=None):
-            self.sql = sql
-            self.validation = validation
-            self.table = table
-            self.records = None
-
-        def validate(self):
-            return self.validation(self.records, self.table)
-
-    tests = [
-        DataQualityTest(
-            sql='SELECT * FROM users',
-            validation=no_results_validation,
-            table='users',
-        ),
-    ]
+    @staticmethod
+    def no_results_test(table):
+        return DataQualityTest(
+            sql=f'SELECT * FROM {table}',
+            validation=DataQualityTest.no_results_validation,
+            table=table,
+        )

@@ -6,7 +6,7 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
                                 LoadDimensionOperator, DataQualityOperator)
 from helpers import SqlQueries
-from helpers import DataQualityTests
+from helpers import DataQualityTest
 
 
 config = configparser.ConfigParser()
@@ -108,11 +108,12 @@ load_time_dimension_table = LoadDimensionOperator(
     truncate=True,
 )
 
+tables = ['staging_events', 'staging_songs', 'songplays', 'users', 'songs', 'artists', 'time']
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
     postgres_conn_id='redshift',
-    tests=DataQualityTests.tests,
+    tests=[DataQualityTest.no_results_test(table) for table in tables],
 )
 
 end_operator = DummyOperator(task_id='Stop_execution', dag=dag)
