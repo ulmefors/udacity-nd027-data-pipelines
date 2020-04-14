@@ -19,8 +19,6 @@ In `airflow.cfg` (`~/airflow`) update `dags_folder` and `plugins_folder` to the 
 
 **Configure environment**
 
-Set environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
-
 Choose `DB/PASSWORD` in `redshift.cfg`.
 
 **Create IAM role, Redshift cluster, configure TCP connectivity, and create Redshift tables**
