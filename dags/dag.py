@@ -9,15 +9,12 @@ from helpers import SqlQueries
 from helpers import DataQualityTest
 
 
-config = configparser.ConfigParser()
-config.read(os.path.join(os.path.dirname(__file__), '..', 'redshift.cfg'))
-
 S3_BUCKET = 'udacity-dend'
 S3_LOG_KEY = 'log_data/{execution_date.year}/{execution_date.month}'
 S3_SONG_KEY = 'song_data'
 LOG_JSON_PATH = f's3://{S3_BUCKET}/log_json_path.json'
-IAM_ROLE_ARN = config['REDSHIFT']['IAM_ROLE_ARN']
-REGION = config['REDSHIFT']['REGION']
+AWS_CREDENTIALS_ID = 'aws_credentials'
+REGION = 'us-west-2'
 
 default_args = {
     'owner': 'airflow',
@@ -42,25 +39,26 @@ stage_events_to_redshift = StageToRedshiftOperator(
     task_id='Stage_events',
     dag=dag,
     redshift_conn_id='redshift',
+    aws_credentials_id=AWS_CREDENTIALS_ID,
     table='staging_events',
     s3_bucket=S3_BUCKET,
     s3_key=S3_LOG_KEY,
-    iam_role_arn=IAM_ROLE_ARN,
     region=REGION,
     truncate=False,
-    json_path=LOG_JSON_PATH,
+    data_format=f"JSON '{LOG_JSON_PATH}'",
 )
 
 stage_songs_to_redshift = StageToRedshiftOperator(
     task_id='Stage_songs',
     dag=dag,
     redshift_conn_id='redshift',
+    aws_credentials_id=AWS_CREDENTIALS_ID,
     table='staging_songs',
     s3_bucket=S3_BUCKET,
     s3_key=S3_SONG_KEY,
-    iam_role_arn=IAM_ROLE_ARN,
     region=REGION,
     truncate=True,
+    data_format="JSON 'auto'",
 )
 
 load_songplays_table = LoadFactOperator(
