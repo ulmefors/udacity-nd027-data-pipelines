@@ -1,20 +1,21 @@
-import configparser
 from datetime import datetime, timedelta
 import os
+
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
-                                LoadDimensionOperator, DataQualityOperator)
-from helpers import SqlQueries
-from helpers import DataQualityTest
-
+from airflow.operators.subdag_operator import SubDagOperator
+from airflow.operators import (StageToRedshiftOperator, LoadFactOperator, DataQualityOperator)
+from helpers import SqlQueries, DataQualityTest
+from dags.load_dimension_table_subdag import get_load_dimension_table_subdag
 
 S3_BUCKET = 'udacity-dend'
-S3_LOG_KEY = 'log_data/{execution_date.year}/{execution_date.month}'
 S3_SONG_KEY = 'song_data'
+S3_LOG_KEY = 'log_data/{execution_date.year}/{execution_date.month}'
 LOG_JSON_PATH = f's3://{S3_BUCKET}/log_json_path.json'
-AWS_CREDENTIALS_ID = 'aws_credentials'
 REGION = 'us-west-2'
+AWS_CREDENTIALS_ID = 'aws_credentials'
+REDSHIFT_CONN_ID = 'redshift'
+DAG_ID = 'dag'
 
 default_args = {
     'owner': 'airflow',
@@ -27,7 +28,7 @@ default_args = {
 }
 
 dag = DAG(
-    dag_id='dag',
+    dag_id=DAG_ID,
     default_args=default_args,
     description='Load and transform data in Redshift with Airflow',
     schedule_interval='@hourly',
@@ -38,7 +39,7 @@ start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
 stage_events_to_redshift = StageToRedshiftOperator(
     task_id='Stage_events',
     dag=dag,
-    redshift_conn_id='redshift',
+    redshift_conn_id=REDSHIFT_CONN_ID,
     aws_credentials_id=AWS_CREDENTIALS_ID,
     table='staging_events',
     s3_bucket=S3_BUCKET,
@@ -51,7 +52,7 @@ stage_events_to_redshift = StageToRedshiftOperator(
 stage_songs_to_redshift = StageToRedshiftOperator(
     task_id='Stage_songs',
     dag=dag,
-    redshift_conn_id='redshift',
+    redshift_conn_id=REDSHIFT_CONN_ID,
     aws_credentials_id=AWS_CREDENTIALS_ID,
     table='staging_songs',
     s3_bucket=S3_BUCKET,
@@ -64,53 +65,37 @@ stage_songs_to_redshift = StageToRedshiftOperator(
 load_songplays_table = LoadFactOperator(
     task_id='Load_songplays_fact_table',
     dag=dag,
-    postgres_conn_id='redshift',
+    postgres_conn_id=REDSHIFT_CONN_ID,
     sql=SqlQueries.songplay_table_insert,
     table='songplays',
     truncate=False,
 )
 
-load_user_dimension_table = LoadDimensionOperator(
-    task_id='Load_user_dim_table',
+load_dimension_table_task_id = 'Load_dim_table_subdag'
+load_dimension_table = SubDagOperator(
+    subdag=get_load_dimension_table_subdag(
+        parent_dag_name=DAG_ID,
+        task_id=load_dimension_table_task_id,
+        default_args=default_args,
+        postgres_conn_id=REDSHIFT_CONN_ID,
+        sql_queries=[
+            SqlQueries.user_table_insert,
+            SqlQueries.song_table_insert,
+            SqlQueries.artist_table_insert,
+            SqlQueries.time_table_insert,
+        ],
+        tables=['users', 'songs', 'artists', 'time'],
+        truncate_flags=[True]*4,
+    ),
     dag=dag,
-    postgres_conn_id='redshift',
-    sql=SqlQueries.user_table_insert,
-    table='users',
-    truncate=True,
-)
-
-load_song_dimension_table = LoadDimensionOperator(
-    task_id='Load_song_dim_table',
-    dag=dag,
-    postgres_conn_id='redshift',
-    sql=SqlQueries.song_table_insert,
-    table='songs',
-    truncate=True,
-)
-
-load_artist_dimension_table = LoadDimensionOperator(
-    task_id='Load_artist_dim_table',
-    dag=dag,
-    postgres_conn_id='redshift',
-    sql=SqlQueries.artist_table_insert,
-    table='artists',
-    truncate=True,
-)
-
-load_time_dimension_table = LoadDimensionOperator(
-    task_id='Load_time_dim_table',
-    dag=dag,
-    postgres_conn_id='redshift',
-    sql=SqlQueries.time_table_insert,
-    table='time',
-    truncate=True,
+    task_id=load_dimension_table_task_id,
 )
 
 tables = ['staging_events', 'staging_songs', 'songplays', 'users', 'songs', 'artists', 'time']
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
-    postgres_conn_id='redshift',
+    postgres_conn_id=REDSHIFT_CONN_ID,
     tests=[DataQualityTest.no_results_test(table) for table in tables],
 )
 
@@ -120,12 +105,6 @@ start_operator >> stage_events_to_redshift
 start_operator >> stage_songs_to_redshift
 stage_events_to_redshift >> load_songplays_table
 stage_songs_to_redshift >> load_songplays_table
-load_songplays_table >> load_user_dimension_table
-load_songplays_table >> load_song_dimension_table
-load_songplays_table >> load_artist_dimension_table
-load_songplays_table >> load_time_dimension_table
-load_user_dimension_table >> run_quality_checks
-load_song_dimension_table >> run_quality_checks
-load_artist_dimension_table >> run_quality_checks
-load_time_dimension_table >> run_quality_checks
+load_songplays_table >> load_dimension_table
+load_dimension_table >> run_quality_checks
 run_quality_checks >> end_operator

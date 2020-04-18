@@ -9,7 +9,7 @@ This project combines song listen log files with song metadata to facilitate ana
 
 **Python requirements**
 
-```bash
+```shell
 $ pip install -r requirements.txt
 ```
 
@@ -22,13 +22,13 @@ In `airflow.cfg` (`~/airflow`) update `dags_folder` and `plugins_folder` to the 
 Choose `DB/PASSWORD` in `redshift.cfg`.
 
 **Create IAM role, Redshift cluster, configure TCP connectivity, and create Redshift tables**
-```bash
+```shell
 $ python create_redshift_cluster.py --query_file create_tables.sql
 ```
 
 ### Start Airflow
 
-```bash
+```shell
 $ airflow initdb
 $ airflow scheduler
 $ airflow webserver
@@ -59,14 +59,14 @@ Click `Save and Add Another`
 
 **Delete IAM role and Redshift cluster**
 
-```bash
+```shell
 $ python create_cluster.py --delete
 ```
 
 ## Pipeline
 
+**Standard DAG**
 ![DAG graph](img/dag-graph.png)
 
-## Further work
-
-* Load dimensions with a subdag
+**DAG with sub-DAG**
+![DAG graph](img/subdag-graph.png)
